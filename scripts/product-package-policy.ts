@@ -16,6 +16,9 @@ export interface ProductPackagePolicy {
  * Optional integrations may be reached by an optional bundle without becoming default capabilities.
  */
 export const PRODUCT_PACKAGE_POLICY: Readonly<Record<string, ProductPackagePolicy>> = {
+  'packages/enterprise/account': { category: 'optional', reason: 'Enterprise Desktop profile account provider; not mounted by official profiles.' },
+  'packages/enterprise/bundle': { category: 'optional', reason: 'Private enterprise Desktop profile layer; loaded only by the branded distribution.' },
+  'packages/enterprise/ui-brand': { category: 'optional', reason: 'Enterprise Desktop client brand occupants; selected by the private enterprise bundle.' },
   'packages/core/agent-tool-presentation': { category: 'optional', reason: 'Deprecated selector retained for existing executor configurations.' },
   'packages/browser-use/browser-use': { category: 'optional', reason: 'Service definition used by explicitly selected browser providers.' },
   'packages/computer-use/computer-use': { category: 'optional', reason: 'Service definition used by explicitly selected computer providers.' },
