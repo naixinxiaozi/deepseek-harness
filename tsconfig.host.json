@@ -345,6 +345,7 @@
     { "path": "./packages/util/plugin-market-index" },
     { "path": "./packages/util/http-proxy" },
     { "path": "./packages/enterprise/distribution" },
+    { "path": "./packages/enterprise/account" },
     { "path": "./packages/util/launch-environment" },
     { "path": "./packages/util/lazy-require" },
     { "path": "./packages/util/native-command" },
