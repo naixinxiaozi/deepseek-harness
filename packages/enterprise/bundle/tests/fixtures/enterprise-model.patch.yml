@@ -1,0 +1,20 @@
+- id: llm-deepseek
+  disabled: true
+
+- id: llm-deepseek-account
+  disabled: true
+
+- id: llm-pi-ai
+  config:
+    providers:
+      enterprise:
+        displayName: Northstar Gateway
+        api: openai-completions
+        baseURL: !!js process.env.ENTERPRISE_MODEL_BASE_URL
+        apiKeyEnv: ENTERPRISE_LLM_TOKEN
+        models: !!js JSON.parse(process.env.ENTERPRISE_MODEL_CATALOG_JSON)
+
+- id: agent-default-model
+  config:
+    provider: enterprise
+    model: northstar-chat

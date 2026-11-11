@@ -128,6 +128,7 @@
     "verify-upgrade-guides": "tsx scripts/verify-upgrade-guides.ts",
     "verify-translation-prompt": "tsx scripts/verify-translation-prompt.ts",
     "verify-translation-pairing": "tsx scripts/verify-translation-pairing.ts",
+    "verify-enterprise-touchpoints": "tsx scripts/verify-enterprise-touchpoints.ts",
     "test:docs": "tsx scripts/run-gates.ts doc-quick",
     "gen-translation-brief": "tsx scripts/gen-translation-brief.ts",
     "verify-doc-budgets": "tsx scripts/verify-doc-budgets.ts",
