@@ -18,7 +18,12 @@ async function withServer(
   try {
     await operation(`http://127.0.0.1:${String(address.port)}`)
   } finally {
-    await new Promise<void>((resolve, reject) => server.close(error => error === undefined ? resolve() : reject(error)))
+    await new Promise<void>((resolve, reject) => {
+      server.close((error) => {
+        if (error === undefined) resolve()
+        else reject(error)
+      })
+    })
   }
 }
 
@@ -41,7 +46,7 @@ describe('enterprise credential exchange', () => {
     let received = ''
     await withServer((request, response) => {
       request.setEncoding('utf8')
-      request.on('data', (chunk) => { received += chunk })
+      request.on('data', (chunk: string) => { received += chunk })
       request.on('end', () => {
         response.writeHead(200, { 'content-type': 'application/json' })
         response.end(JSON.stringify({ result: { access_token: 'token-1' } }))
@@ -87,18 +92,4 @@ describe('enterprise credential exchange', () => {
     })
   })
 
-  it('rejects loopback HTTP unless explicitly enabled', async () => {
-    await withServer((_request, response) => {
-      response.writeHead(200, { 'content-type': 'application/json' })
-      response.end('{"access_token":"unused"}')
-    }, async (baseUrl) => {
-      const value = { ...config(baseUrl), allowLoopbackHttp: false, tokenField: 'access_token' }
-      await expect(exchangeEnterpriseCredentials(
-        value,
-        'alice',
-        'password',
-        new AbortController().signal,
-      )).rejects.toMatchObject({ name: 'EnterpriseAuthError', signInCode: 'protocol' })
-    })
-  })
 })

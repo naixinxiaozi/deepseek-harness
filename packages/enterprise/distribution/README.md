@@ -61,7 +61,7 @@ Zod validates the untrusted JSON structure. A second validation pass checks URL 
 ## Further Exploration
 
 - [Enterprise package group](../README.md) — adjacent enterprise packages.
-- [Enterprise distribution design](../../../.agents/notes/proposed/feature/2026-11-11-enterprise-desktop-distribution.md) — Desktop integration and security decisions.
+- [Enterprise distribution design](../../../.agents/notes/implemented/feature/2026-11-11-enterprise-desktop-distribution.md) — Desktop integration and security decisions.
 
 ## Known Limitations and Deferred Work
 

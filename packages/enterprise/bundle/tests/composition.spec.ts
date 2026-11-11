@@ -26,21 +26,23 @@ function openAiChunk(content: string, finishReason: string | null): string {
 
 describe('enterprise model composition', () => {
   it('routes one real Loader turn through llm-pi-ai and persists the local Session', async () => {
-    const requests: Array<{ authorization?: string; body: unknown }> = []
-    const server = createServer(async (request, response) => {
-      const chunks: Buffer[] = []
-      for await (const chunk of request) chunks.push(Buffer.from(chunk))
-      const text = Buffer.concat(chunks).toString('utf8')
-      requests.push({
-        authorization: request.headers.authorization,
-        body: text === '' ? null : JSON.parse(text),
-      })
-      response.writeHead(200, { 'content-type': 'text/event-stream' })
-      response.end([
-        openAiChunk('enterprise-ok', null),
-        openAiChunk('', 'stop'),
-        'data: [DONE]\n\n',
-      ].join(''))
+    const requests: Array<{ authorization: string | undefined; body: unknown }> = []
+    const server = createServer((request, response) => {
+      void (async () => {
+        const chunks: Uint8Array[] = []
+        for await (const chunk of request) chunks.push(Buffer.from(chunk as Uint8Array))
+        const text = Buffer.concat(chunks).toString('utf8')
+        requests.push({
+          authorization: request.headers.authorization,
+          body: text === '' ? null : JSON.parse(text),
+        })
+        response.writeHead(200, { 'content-type': 'text/event-stream' })
+        response.end([
+          openAiChunk('enterprise-ok', null),
+          openAiChunk('', 'stop'),
+          'data: [DONE]\n\n',
+        ].join(''))
+      })()
     })
     await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
     const address = server.address()
@@ -97,7 +99,7 @@ describe('enterprise model composition', () => {
     } finally {
       stdout.mockRestore()
       await ctx?.fiber.dispose()
-      await new Promise<void>(resolve => server.close(() => resolve()))
+      await new Promise<void>(resolve => server.close(() => { resolve() }))
       server.closeAllConnections()
     }
   }, 30_000)

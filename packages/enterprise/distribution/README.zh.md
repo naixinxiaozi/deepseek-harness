@@ -61,7 +61,7 @@ Zod 校验不受信任的 JSON 结构。第二阶段校验 URL origin 与路径�
 ## 进一步探索
 
 - [企业包组](../README.zh.md)——相邻企业包。
-- [企业发行设计](../../../.agents/notes/proposed/feature/2026-11-11-enterprise-desktop-distribution.zh.md)——桌面集成与安全决策。
+- [企业发行设计](../../../.agents/notes/implemented/feature/2026-11-11-enterprise-desktop-distribution.zh.md)——桌面集成与安全决策。
 
 ## 已知限制与延期工作
 

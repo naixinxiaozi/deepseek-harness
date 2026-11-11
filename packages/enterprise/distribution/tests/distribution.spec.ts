@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { parseEnterpriseDistribution } from '../src/index.ts'
 
-const fixture = JSON.parse(readFileSync(new URL('./fixtures/distribution.json', import.meta.url), 'utf8'))
+const fixture: unknown = JSON.parse(readFileSync(new URL('./fixtures/distribution.json', import.meta.url), 'utf8'))
 
 type MutableFixture = {
   product: Record<string, unknown>

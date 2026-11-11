@@ -33,7 +33,7 @@ This group keeps enterprise-specific behavior outside the official runtime packa
 ## Related documentation
 
 - [Desktop application](../../apps/desktop/README.md) — loads the enterprise manifest and owns native packaging.
-- [Enterprise distribution design](../../.agents/notes/proposed/feature/2026-11-11-enterprise-desktop-distribution.md) — ownership and security decisions.
+- [Enterprise distribution design](../../.agents/notes/implemented/feature/2026-11-11-enterprise-desktop-distribution.md) — ownership and security decisions.
 
 <a id="dev-note"></a>
 ## Dev Note

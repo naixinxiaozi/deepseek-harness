@@ -91,7 +91,7 @@ interface Attempt {
   readonly controller: AbortController
   view: SignInAttemptView
   done: Promise<void>
-  disposeRoute: () => void
+  disposeRoute: () => Promise<void>
 }
 
 function clientOrigin(value: string): URL {
@@ -118,10 +118,10 @@ async function readPostForm(request: IncomingMessage): Promise<URLSearchParams> 
   if (!request.headers['content-type']?.toLowerCase().startsWith('application/x-www-form-urlencoded')) {
     throw new EnterpriseAuthError('enterprise login form requires URL-encoded input', 'protocol')
   }
-  const chunks: Buffer[] = []
+  const chunks: Uint8Array[] = []
   let bytes = 0
   for await (const chunk of request) {
-    const value = Buffer.from(chunk)
+    const value = Buffer.from(chunk as Uint8Array)
     bytes += value.byteLength
     if (bytes > MAX_FORM_BYTES) throw new EnterpriseAuthError('enterprise login form is too large', 'protocol')
     chunks.push(value)
@@ -176,7 +176,7 @@ export class EnterpriseAccount extends DeepSeekAccount {
       const attempt = this.attempt
       if (attempt !== undefined) {
         if (attempt.view.phase !== 'committing') attempt.controller.abort()
-        attempt.disposeRoute()
+        void attempt.disposeRoute()
         await attempt.done
       }
       await this.removing
@@ -241,13 +241,21 @@ export class EnterpriseAccount extends DeepSeekAccount {
         expiresAt: Date.now() + this.config.attemptTimeoutMs,
       },
       done: Promise.resolve(),
-      disposeRoute: () => undefined,
+      disposeRoute: () => Promise.resolve(),
     }
-    attempt.disposeRoute = this.ctx.effect(() => this.ctx.webServer.register({
-      kind: 'exact',
-      path,
-      handler: (request, response) => this.handleLogin(attempt, request, response),
-    }), 'enterprise account login form')
+    attempt.disposeRoute = this.ctx.effect(() => {
+      const dispose = this.ctx.webServer.register({
+        kind: 'exact',
+        path,
+        handler: (request, response) => {
+          void this.handleLogin(attempt, request, response).catch((error: unknown) => {
+            console.error('[enterprise-account] login route failed', error instanceof Error ? error.name : 'unknown')
+            if (!response.headersSent) response.writeHead(500, { 'cache-control': 'no-store' }).end()
+          })
+        },
+      })
+      return () => { dispose() }
+    }, 'enterprise account login form')
     this.attempt = attempt
     this.changed()
     return this.getState()
@@ -259,7 +267,7 @@ export class EnterpriseAccount extends DeepSeekAccount {
       if (attempt.view.phase !== 'committing') {
         attempt.controller.abort()
         this.update(attempt, { phase: 'cancelled', authorizeUrl: undefined })
-        attempt.disposeRoute()
+        void attempt.disposeRoute()
       }
       await attempt.done
     }
@@ -272,7 +280,7 @@ export class EnterpriseAccount extends DeepSeekAccount {
       await this.ctx.credentials.unset(ENTERPRISE_LLM_TOKEN)
       if (this.attempt !== undefined) {
         this.attempt.controller.abort()
-        this.attempt.disposeRoute()
+        void this.attempt.disposeRoute()
       }
       this.attempt = undefined
       this.ctx.emit('deepseek-account/signed-out')
@@ -385,7 +393,7 @@ export class EnterpriseAccount extends DeepSeekAccount {
       this.update(attempt, { phase: 'committing' })
       await this.ctx.credentials.set(ENTERPRISE_LLM_TOKEN, token)
       this.update(attempt, { phase: 'succeeded' })
-      attempt.disposeRoute()
+      void attempt.disposeRoute()
       response.writeHead(200, {
         'content-type': 'text/html; charset=utf-8',
         'content-security-policy': "default-src 'none'; frame-ancestors 'none'",
@@ -419,7 +427,7 @@ export class EnterpriseAccount extends DeepSeekAccount {
       authorizeUrl: undefined,
       errorCode: error === 'invalid-credentials' ? 'protocol' : error,
     })
-    attempt.disposeRoute()
+    void attempt.disposeRoute()
     if (!response.headersSent) response.writeHead(status, responseHeaders(page.headers)).end(page.html)
   }
 

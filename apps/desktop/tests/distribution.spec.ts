@@ -6,7 +6,7 @@ import {
   parseDesktopDistribution,
 } from '../src/distribution.ts'
 
-const fixture = JSON.parse(readFileSync(
+const fixture: unknown = JSON.parse(readFileSync(
   new URL('../../../packages/enterprise/distribution/tests/fixtures/distribution.json', import.meta.url),
   'utf8',
 ))

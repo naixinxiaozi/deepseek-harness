@@ -44,6 +44,7 @@
     "apps/desktop/scripts/development-project.ts",
     "apps/desktop/scripts/electron-builder-config.mjs",
     "apps/desktop/scripts/installer-locales.mjs",
+    "apps/desktop/scripts/installer-locales.d.mts",
     "apps/desktop/scripts/package-macos.ts",
     "apps/desktop/scripts/package-target.ts",
     "apps/desktop/scripts/prepare-dsh.ts",

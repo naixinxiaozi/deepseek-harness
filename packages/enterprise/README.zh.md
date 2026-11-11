@@ -33,7 +33,7 @@ kind: "package-group"
 ## 相关文档
 
 - [桌面应用](../../apps/desktop/README.zh.md)——加载企业清单并负责原生打包。
-- [企业发行设计](../../.agents/notes/proposed/feature/2026-11-11-enterprise-desktop-distribution.zh.md)——所有权与安全决策。
+- [企业发行设计](../../.agents/notes/implemented/feature/2026-11-11-enterprise-desktop-distribution.zh.md)——所有权与安全决策。
 
 <a id="dev-note"></a>
 ## 开发备注

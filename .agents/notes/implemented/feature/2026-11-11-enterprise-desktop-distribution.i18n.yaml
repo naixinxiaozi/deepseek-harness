@@ -1,0 +1,40 @@
+# Bilingual-pair consistency record for 2026-11-11-enterprise-desktop-distribution.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/feature/2026-11-11-enterprise-desktop-distribution.md
+/agent-note-enterprise-branded-desktop-distribution:
+  en: d26d8e901acf895a
+  zh: 65b46f40c8e399b6
+/agent-note-enterprise-branded-desktop-distribution/problem:
+  en: d5be4e9c25ffdb3e
+  zh: 050c1f33f27eb01b
+/agent-note-enterprise-branded-desktop-distribution/decision:
+  en: 60a435e3ca63872f
+  zh: 4634b8d3f683a0f1
+/agent-note-enterprise-branded-desktop-distribution/decision/packages-and-composition:
+  en: 0626f3ed5280ce9a
+  zh: 9f079139ce5f0ef4
+/agent-note-enterprise-branded-desktop-distribution/decision/enterprise-login:
+  en: c53edce256efb691
+  zh: f2e26fcd8f0f5b47
+/agent-note-enterprise-branded-desktop-distribution/decision/model-routing:
+  en: 457238804cec8b5d
+  zh: 1d709ec92f73770d
+/agent-note-enterprise-branded-desktop-distribution/decision/branding-and-packaging:
+  en: 9bed5e6bbbb0f098
+  zh: da80e88bfdc44edd
+/agent-note-enterprise-branded-desktop-distribution/decision/security-and-failure-handling:
+  en: 85c52d419d53b464
+  zh: e375190fc6e82abc
+/agent-note-enterprise-branded-desktop-distribution/decision/upstream-merge-guard:
+  en: 67fadc400d36cb2d
+  zh: 0efe8f61627cc280
+/agent-note-enterprise-branded-desktop-distribution/alternatives-considered:
+  en: 8cca72df6924bc30
+  zh: 4fbec849363ac20e
+/agent-note-enterprise-branded-desktop-distribution/testing:
+  en: 212a5f0205da5ea2
+  zh: 64603f04bb7569c4
+/agent-note-enterprise-branded-desktop-distribution/consequences:
+  en: 1fb02757d76527a3
+  zh: 8d2b95a94881d7c3

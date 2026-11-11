@@ -22,18 +22,20 @@ afterEach(async () => {
 })
 
 async function fixture(options: { holdLogin?: boolean } = {}) {
-  let releaseLogin = (): undefined => undefined
+  let releaseLogin = (): void => undefined
   let release = Promise.resolve()
   if (options.holdLogin === true) {
     const gate = Promise.withResolvers<undefined>()
     release = gate.promise
-    releaseLogin = gate.resolve
+    releaseLogin = () => { gate.resolve(undefined) }
   }
-  const api = createServer(async (request, response) => {
-    for await (const _chunk of request) { /* consume the bounded login body */ }
-    await release
-    response.writeHead(200, { 'content-type': 'application/json' })
-    response.end(JSON.stringify({ access_token: 'token-1' }))
+  const api = createServer((request, response) => {
+    void (async () => {
+      for await (const _chunk of request) { /* consume the bounded login body */ }
+      await release
+      response.writeHead(200, { 'content-type': 'application/json' })
+      response.end(JSON.stringify({ access_token: 'token-1' }))
+    })()
   })
   await new Promise<void>(resolve => api.listen(0, '127.0.0.1', resolve))
   const address = api.address()
@@ -41,7 +43,7 @@ async function fixture(options: { holdLogin?: boolean } = {}) {
   cleanups.push(async () => {
     releaseLogin()
     api.closeAllConnections()
-    await new Promise<void>(resolve => api.close(() => resolve()))
+    await new Promise<void>(resolve => api.close(() => { resolve() }))
   })
 
   const home = await mkdtemp(join(tmpdir(), 'dsh-enterprise-account-'))
