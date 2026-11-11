@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for 2026-11-11-enterprise-desktop-distribution.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/proposed/feature/2026-11-11-enterprise-desktop-distribution.md
+/agent-note-enterprise-branded-desktop-distribution:
+  en: 6f2aad00c2291f4b
+  zh: 7cce983f63896617
+/agent-note-enterprise-branded-desktop-distribution/problem:
+  en: c944b8f99a8836b0
+  zh: 1c17b7989444c943
+/agent-note-enterprise-branded-desktop-distribution/proposal:
+  en: 5bef8d00782a8942
+  zh: db04627913ed8653
+/agent-note-enterprise-branded-desktop-distribution/proposal/repository-ownership:
+  en: 6e38e321fddfbe37
+  zh: efaea8c4b9fc1f0c
+/agent-note-enterprise-branded-desktop-distribution/proposal/enterprise-login:
+  en: c6fb42cb5bdbb6a7
+  zh: 408c1e8fa2e9db58
+/agent-note-enterprise-branded-desktop-distribution/proposal/model-routing:
+  en: 98c5e9de0ca561bf
+  zh: ae422f49ab0e7387
+/agent-note-enterprise-branded-desktop-distribution/proposal/branding-and-packaging:
+  en: a4938e32700e0c6f
+  zh: 297a2df2ad4df6c6
+/agent-note-enterprise-branded-desktop-distribution/proposal/failure-handling:
+  en: 619b1d0df7c27f78
+  zh: 09ae45e89ac02236
+/agent-note-enterprise-branded-desktop-distribution/proposal/data-flow:
+  en: a78ac2ee5d83166b
+  zh: 025af46c008b9325
+/agent-note-enterprise-branded-desktop-distribution/proposal/testing:
+  en: 11ab2a6025314971
+  zh: a006be984d3e1073
+/agent-note-enterprise-branded-desktop-distribution/proposal/upstream-merge-strategy:
+  en: fee3e240ffead57a
+  zh: 69923ce110e885c9
+/agent-note-enterprise-branded-desktop-distribution/alternatives-considered:
+  en: e48d64c890698522
+  zh: 7f5d3232f5eb777c
+/agent-note-enterprise-branded-desktop-distribution/acceptance-criteria:
+  en: 80f13367ff6f4842
+  zh: c4d5e6c163030681
+/agent-note-enterprise-branded-desktop-distribution/risks:
+  en: a332c2d302b0931e
+  zh: c24eac76947484be
