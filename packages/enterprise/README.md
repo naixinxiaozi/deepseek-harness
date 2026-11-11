@@ -24,7 +24,10 @@ This group keeps enterprise-specific behavior outside the official runtime packa
 
 | Package | Role |
 |---|---|
+| [`account`](account/README.md) | Provides enterprise username and password sign-in and the stored model credential |
+| [`bundle`](bundle/README.md) | Replaces official account, model, and client-brand profile rows |
 | [`distribution`](distribution/README.md) | Validates product identity, enterprise service endpoints, model catalog, branding paths, and update mode |
+| [`ui-brand`](ui-brand/README.md) | Occupies sidebar and blank-home product-brand slots |
 
 <a id="related-documentation"></a>
 ## Related documentation

@@ -1,0 +1,43 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/enterprise/ui-brand/README.md
+/:
+  en: e9d3ba1e7240586c
+  zh: 2d741ae3cc66fe7e
+/dsh-enterprise-dsh-enterprise-ui-brand:
+  en: aceb869268d8a6c0
+  zh: 46825d8a680837d5
+/dsh-enterprise-dsh-enterprise-ui-brand/summary:
+  en: 8759f7be8454b30e
+  zh: 01e59bc6b3f07f6b
+/dsh-enterprise-dsh-enterprise-ui-brand/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/dsh-enterprise-dsh-enterprise-ui-brand/use-this-package:
+  en: 6cbab55bc4b0b73d
+  zh: 6c0eea1363435daa
+/dsh-enterprise-dsh-enterprise-ui-brand/use-this-package/minimal-configuration:
+  en: bc19513c65ea0213
+  zh: ac18186e2626e0aa
+/dsh-enterprise-dsh-enterprise-ui-brand/understand-the-implementation:
+  en: 75aaefe5f6298887
+  zh: 1c7b4b09bd9f82f0
+/dsh-enterprise-dsh-enterprise-ui-brand/understand-the-implementation/source-map:
+  en: a634ac24382dbef5
+  zh: be5e58d1f608ac57
+/dsh-enterprise-dsh-enterprise-ui-brand/further-exploration:
+  en: 3ba20e5cb1f1f14e
+  zh: 0cc2dbca4d57d328
+/dsh-enterprise-dsh-enterprise-ui-brand/model-experience:
+  en: 0751a089e5530201
+  zh: 6fcb76c8d05a8936
+/dsh-enterprise-dsh-enterprise-ui-brand/model-experience/kv-cache-effect:
+  en: eca7d5e607c1d222
+  zh: e9d060e35712c745
+/dsh-enterprise-dsh-enterprise-ui-brand/known-limitations-and-deferred-work:
+  en: fbc28fe776573f13
+  zh: 20bc9f8fe7bfcb41
+/dsh-enterprise-dsh-enterprise-ui-brand/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

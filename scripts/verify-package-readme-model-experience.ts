@@ -51,6 +51,8 @@ const NO_MODEL_EXPERIENCE_SECTION: Readonly<Record<string, string>> = {
  */
 const SENTENCE_MODEL_EXPERIENCE: Readonly<Record<string, SentenceContract>> = {
   'packages/enterprise/account': { kind: 'none', reason: 'Enterprise credentials affect HTTP authentication only; they add no model-visible input or Session events.' },
+  'packages/enterprise/bundle': { kind: 'indirect', reason: 'The layer selects the enterprise account, model, and brand rows; those packages own every model-visible request and output.' },
+  'packages/enterprise/ui-brand': { kind: 'none', reason: 'Browser-side brand occupants render product identity without adding model input or Session events.' },
   'packages/client/ui-context-menu': { kind: 'none', reason: 'Client menu presentation and contributed callbacks add no model input.' },
   'packages/client/ui-file-actions': { kind: 'none', reason: 'Explicit user file saves and clipboard operations add no model input.' },
   'packages/client/ui-entry-customization': { kind: 'none', reason: 'Controls browser launchers and prepares a reviewable Creator draft without submitting model input.' },

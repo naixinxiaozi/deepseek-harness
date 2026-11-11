@@ -1,0 +1,46 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/enterprise/bundle/README.md
+/:
+  en: d668da558045ae94
+  zh: 6f4b2f54dd7197c2
+/dsh-enterprise-dsh-enterprise:
+  en: 080f479ef058b361
+  zh: da8985fb3f2ae8cf
+/dsh-enterprise-dsh-enterprise/summary:
+  en: 0c071cd71ed8b571
+  zh: badb7a9bbd55cca8
+/dsh-enterprise-dsh-enterprise/table-of-contents:
+  en: d152484eb41ac6b4
+  zh: 09388d293f9be9cb
+/dsh-enterprise-dsh-enterprise/use-this-package:
+  en: bbff250eba0f1b89
+  zh: 0a618f05cc88ee2b
+/dsh-enterprise-dsh-enterprise/use-this-package/install-into-a-profile:
+  en: 47b6edaf61822614
+  zh: 15e7050e04596886
+/dsh-enterprise-dsh-enterprise/use-this-package/what-you-get:
+  en: c33718e5cfe1fb77
+  zh: a1a04222c78e3f6c
+/dsh-enterprise-dsh-enterprise/understand-the-implementation:
+  en: 87f4eac60c60482a
+  zh: 7083c34b1e80d0c5
+/dsh-enterprise-dsh-enterprise/understand-the-implementation/source-map:
+  en: 1e149625b93b1018
+  zh: 9e154b1559c70358
+/dsh-enterprise-dsh-enterprise/further-exploration:
+  en: dea65eef46ccb585
+  zh: 11b4cbc043ebad36
+/dsh-enterprise-dsh-enterprise/model-experience:
+  en: f86390f767893a9a
+  zh: 1a2055fcdb187a39
+/dsh-enterprise-dsh-enterprise/model-experience/kv-cache-effect:
+  en: 29079ac6313ec7b0
+  zh: d070acda8327506d
+/dsh-enterprise-dsh-enterprise/known-limitations-and-deferred-work:
+  en: 9810e1b240bc8e08
+  zh: f3d7b6f5b9efd4e2
+/dsh-enterprise-dsh-enterprise/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

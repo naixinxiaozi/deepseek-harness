@@ -1,0 +1,46 @@
+- id: deepseek-account
+  disabled: true
+
+- id: llm-deepseek
+  disabled: true
+
+- id: llm-deepseek-account
+  disabled: true
+
+- id: ui-brand-official
+  disabled: true
+
+- id: llm-pi-ai
+  config:
+    providers:
+      enterprise:
+        displayName: !!js process.env.ENTERPRISE_PROVIDER_NAME || 'Enterprise'
+        api: !!js process.env.ENTERPRISE_MODEL_API || 'openai-completions'
+        baseURL: !!js process.env.ENTERPRISE_MODEL_BASE_URL || 'https://services.invalid/v1'
+        apiKeyEnv: ENTERPRISE_LLM_TOKEN
+        models: !!js JSON.parse(process.env.ENTERPRISE_MODEL_CATALOG_JSON || '[{"id":"enterprise-default","contextWindow":131072,"maxTokens":32768,"input":["text"]}]')
+
+- id: agent-default-model
+  config:
+    provider: enterprise
+    model: !!js process.env.ENTERPRISE_DEFAULT_MODEL || 'enterprise-default'
+
+- insert:
+    - id: enterprise-account
+      name: '@dsh-enterprise/dsh-enterprise-account'
+      config:
+        productName: !!js process.env.ENTERPRISE_PRODUCT_NAME || 'Enterprise Harness'
+        loginUrl: !!js process.env.ENTERPRISE_LOGIN_URL || 'https://services.invalid/auth/login'
+        logoutUrl: !!js process.env.ENTERPRISE_LOGOUT_URL
+        usageUrl: !!js process.env.ENTERPRISE_USAGE_URL || 'https://services.invalid/usage'
+        topUpUrl: !!js process.env.ENTERPRISE_TOP_UP_URL || 'https://services.invalid/top-up'
+        inferenceOrigin: !!js process.env.ENTERPRISE_INFERENCE_ORIGIN || 'https://services.invalid'
+        usernameField: !!js process.env.ENTERPRISE_USERNAME_FIELD || 'username'
+        passwordField: !!js process.env.ENTERPRISE_PASSWORD_FIELD || 'password'
+        tokenField: !!js process.env.ENTERPRISE_TOKEN_FIELD || 'access_token'
+        allowLoopbackHttp: !!js process.env.ENTERPRISE_ALLOW_LOOPBACK_HTTP === '1'
+        requestTimeoutMs: !!js Number(process.env.ENTERPRISE_REQUEST_TIMEOUT_MS || '30000')
+        attemptTimeoutMs: !!js Number(process.env.ENTERPRISE_ATTEMPT_TIMEOUT_MS || '600000')
+
+    - id: ui-brand-enterprise
+      name: '@dsh-enterprise/dsh-enterprise-ui-brand'

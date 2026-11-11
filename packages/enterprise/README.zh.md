@@ -24,7 +24,10 @@ kind: "package-group"
 
 | 包 | 职责 |
 |---|---|
+| [`account`](account/README.zh.md) | 提供企业用户名密码登录与保存的模型凭据 |
+| [`bundle`](bundle/README.zh.md) | 替换官方账号、模型与客户端品牌配置行 |
 | [`distribution`](distribution/README.zh.md) | 校验产品标识、企业服务端点、模型目录、品牌路径与更新模式 |
+| [`ui-brand`](ui-brand/README.zh.md) | 占据侧栏与空白首页的产品品牌槽位 |
 
 <a id="related-documentation"></a>
 ## 相关文档

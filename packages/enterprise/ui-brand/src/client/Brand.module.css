@@ -1,0 +1,27 @@
+.mark {
+  display: inline-grid;
+  place-items: center;
+  box-sizing: border-box;
+  flex: none;
+  border-radius: 28%;
+  background: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-brand-primary-invert);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.name {
+  overflow: hidden;
+  color: var(--dsw-alias-brand-text);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.heroMark {
+  border-radius: 30%;
+}
+
+.frame {
+  display: contents;
+}
