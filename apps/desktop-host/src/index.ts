@@ -19,13 +19,22 @@ import { installPlatformSessionPublisher } from './platform-session.ts'
 import { installOfficeEngineResolution } from './office-engine.ts'
 import { installOperationDiagnostics } from './operation-diagnostics.ts'
 
+/**
+ * Resolve the manifest whose dependency table describes the complete Desktop runtime.
+ * @param runtimeDir - Installed Desktop runtime root.
+ * @returns Absolute path to the runtime root manifest.
+ */
+export function desktopInstallAnchor(runtimeDir: string): string {
+  return join(runtimeDir, 'package.json')
+}
+
 async function main(): Promise<void> {
   const runId = randomUUID() as PluginOperationRunId
   if (process.connected) process.send?.({ type: 'starting', runId }, (error) => { if (error !== null) console.error(error) })
   const runtimeDir = process.argv[2] as string
   const projectDir = process.argv[3] as string
   installOfficeEngineResolution(runtimeDir)
-  const installAnchor = join(runtimeDir, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+  const installAnchor = desktopInstallAnchor(runtimeDir)
   const profile = loadProfileDirectory('dsh', projectDir, installAnchor)
   reportSkippedBundles('dsh', profile)
   const application = runProfile({
