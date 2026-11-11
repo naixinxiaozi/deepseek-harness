@@ -10,6 +10,7 @@ import type { DesktopRelease } from '../src/release.ts'
 import { developmentRuntimeDirectory, resolveDesktopBuildTarget } from './desktop-build-paths.mjs'
 import { prepareDevelopmentProject } from './development-project.ts'
 import { prepareDevelopmentApp } from './development-app.ts'
+import { readDesktopDistributionBuild } from '../src/desktop-distribution-build.ts'
 import { preparePrimaryRuntime } from './prepare-primary-runtime.ts'
 
 const APP_ROOT = resolve(import.meta.dirname, '..')
@@ -77,8 +78,16 @@ async function launchElectron(): Promise<void> {
   console.log(`desktop development: userData=${userData}`)
   console.log(`desktop development: inspectors main=${String(mainPort)}, renderer=${String(rendererPort)}, host=${String(hostPort)}`)
   if (process.platform === 'darwin') {
+    const distribution = readDesktopDistributionBuild(environment)?.manifest
     const executable = prepareDevelopmentApp({ electron, appRoot: APP_ROOT, directory: DEVELOPMENT_ROOT, home, userData,
-      mainPort, rendererPort, hostPort, openDevtools: environment.DSH_DESKTOP_OPEN_DEVTOOLS! })
+      mainPort, rendererPort, hostPort, openDevtools: environment.DSH_DESKTOP_OPEN_DEVTOOLS!,
+      ...(distribution === undefined ? {} : {
+        productName: distribution.product.name,
+        protocolName: distribution.product.protocolName,
+        protocolScheme: distribution.product.protocolScheme,
+        productAppId: distribution.product.appId,
+      }),
+    })
     await run(executable, [], APP_ROOT, environment)
     return
   }
@@ -112,6 +121,7 @@ async function main(): Promise<void> {
       { encoding: 'utf8', env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' } }).trim(),
     pnpmVersion,
   }
+  const distribution = readDesktopDistributionBuild(process.env)?.manifest
   prepareDevelopmentProject({
     projectDir: join(DEVELOPMENT_ROOT, 'project'),
     cliDir: join(REPOSITORY_ROOT, 'apps', 'cli'),
@@ -119,6 +129,7 @@ async function main(): Promise<void> {
     dependencyDir: join(REPOSITORY_ROOT, 'node_modules', '.pnpm', 'node_modules'),
     release,
     target: resolveDesktopBuildTarget(),
+    ...(distribution === undefined ? {} : { bundles: distribution.bundles }),
   })
   await preparePrimaryRuntime()
   await launchElectron()

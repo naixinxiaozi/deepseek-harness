@@ -11,9 +11,14 @@ import { WELCOME_IPC, type WelcomeOperations } from './welcome-api.ts'
  * Resolve the fixed-size welcome window's native material and controls.
  * @param platform - operating system hosting Electron.
  * @param locale - shell-owned localized copy.
+ * @param productName - configured product label for the isolated preload.
  * @returns sandboxed window options with a locale-only preload.
  */
-export function welcomeWindowOptions(platform: NodeJS.Platform, locale: DesktopLocale): BrowserWindowConstructorOptions {
+export function welcomeWindowOptions(
+  platform: NodeJS.Platform,
+  locale: DesktopLocale,
+  productName = 'DeepSeek Harness',
+): BrowserWindowConstructorOptions {
   return {
     width: 600,
     height: 700,
@@ -38,7 +43,10 @@ export function welcomeWindowOptions(platform: NodeJS.Platform, locale: DesktopL
     } as const : {}),
     webPreferences: {
       preload: fileURLToPath(new URL('./preload-welcome.cjs', import.meta.url)),
-      additionalArguments: [`--dsh-welcome-locale=${locale.id}`],
+      additionalArguments: [
+        `--dsh-welcome-locale=${locale.id}`,
+        `--dsh-welcome-product-name=${productName}`,
+      ],
       nodeIntegration: false,
       contextIsolation: true,
       sandbox: true,
@@ -56,8 +64,12 @@ let disposeActiveHandlers: (() => void) | undefined
  * @param operations - credential write and this-launch-only skip actions.
  * @returns the visible window; a failed load destroys it before rejecting.
  */
-export async function openWelcomeWindow(locale: DesktopLocale, operations: WelcomeOperations): Promise<BrowserWindow> {
-  const options = welcomeWindowOptions(process.platform, locale)
+export async function openWelcomeWindow(
+  locale: DesktopLocale,
+  operations: WelcomeOperations,
+  productName = 'DeepSeek Harness',
+): Promise<BrowserWindow> {
+  const options = welcomeWindowOptions(process.platform, locale, productName)
   const window = new BrowserWindow(options)
   disposeActiveHandlers?.()
   let active = true

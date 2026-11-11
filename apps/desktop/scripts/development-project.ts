@@ -39,6 +39,8 @@ export interface DevelopmentProjectOptions {
   readonly release: DesktopRelease
   /** Build target whose prepared payload the disposable project runs against. */
   readonly target: DesktopAutoUpdateTarget
+  /** Optional enterprise profile bundle order. */
+  readonly bundles?: readonly string[]
 }
 
 function readManifest(path: string): PackageManifest {
@@ -145,7 +147,7 @@ export function prepareDevelopmentProject(options: DevelopmentProjectOptions): s
   }
 
   removeOwnedPath(options.projectDir)
-  createDevelopmentProjectMetadata(options.projectDir, options.release)
+  createDevelopmentProjectMetadata(options.projectDir, options.release, options.bundles)
   const destinationModules = join(options.projectDir, 'node_modules')
   mkdirSync(destinationModules, { recursive: true })
   const names = [

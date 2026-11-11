@@ -8,8 +8,11 @@ import { WELCOME_IPC, type WelcomeApi, type WelcomeNotice, type WelcomeSaveResul
 const prefix = '--dsh-welcome-locale='
 const locale = process.argv.find(argument => argument.startsWith(prefix))?.slice(prefix.length)
 if (locale === undefined) throw new Error('desktop welcome: missing window locale')
+const productPrefix = '--dsh-welcome-product-name='
+const productName = process.argv.find(argument => argument.startsWith(productPrefix))?.slice(productPrefix.length)
+  ?? 'DeepSeek Harness'
 const api: WelcomeApi = {
-  ...resolveDesktopLocale(locale),
+  ...resolveDesktopLocale(locale, productName),
   analytics: async (eventName, attributes) => {
     if (await api.analyticsEnabled()) await ipcRenderer.invoke(WELCOME_IPC.analytics, eventName, attributes)
   },

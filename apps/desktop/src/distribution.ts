@@ -54,6 +54,18 @@ export function parseDesktopDistribution(value: unknown): DesktopDistribution {
 }
 
 /**
+ * Project the native external-link registration for an enterprise distribution.
+ * @param value - Validated enterprise distribution.
+ * @returns Protocol display name and sole scheme.
+ */
+export function enterpriseProtocol(value: EnterpriseDistribution): {
+  readonly name: string
+  readonly schemes: readonly [string]
+} {
+  return { name: value.product.protocolName, schemes: [value.product.protocolScheme] }
+}
+
+/**
  * Map the enterprise manifest to Host plugin configuration.
  * @param value - Validated enterprise distribution.
  * @returns Environment values consumed by the enterprise bundle patch.

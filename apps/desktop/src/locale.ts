@@ -1538,13 +1538,27 @@ export interface DesktopLocale {
 }
 
 /** Resolve Electron's locale to one shipped Desktop dictionary. */
-export function resolveDesktopLocale(locale: string): DesktopLocale {
+export function resolveDesktopLocale(locale: string, productName?: string): DesktopLocale {
   const primary = locale.toLowerCase().split('-')[0]
   if (primary !== undefined && Object.hasOwn(dictionaries, primary)) {
     const id = primary as keyof typeof dictionaries
-    return { id: id === 'zh' ? 'zh-CN' : id, messages: dictionaries[id] }
+    const messages = productName === undefined || productName === 'DeepSeek Harness'
+      ? dictionaries[id]
+      : Object.fromEntries(Object.entries(dictionaries[id]).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? value.replaceAll('DeepSeek Harness', productName) : value,
+      ])) as DesktopMessages
+    return { id: id === 'zh' ? 'zh-CN' : id, messages }
   }
-  return { id: 'en', messages: en }
+  return {
+    id: 'en',
+    messages: productName === undefined || productName === 'DeepSeek Harness'
+      ? en
+      : Object.fromEntries(Object.entries(en).map(([key, value]) => [
+        key,
+        typeof value === 'string' ? value.replaceAll('DeepSeek Harness', productName) : value,
+      ])) as DesktopMessages,
+  }
 }
 
 /**
@@ -1553,14 +1567,18 @@ export function resolveDesktopLocale(locale: string): DesktopLocale {
  * @param languages - operating-system languages in preference order.
  * @returns the supported dictionary, falling back to English.
  */
-export function resolveDesktopStartupLocale(preference: string | null, languages: readonly string[]): DesktopLocale {
+export function resolveDesktopStartupLocale(
+  preference: string | null,
+  languages: readonly string[],
+  productName?: string,
+): DesktopLocale {
   const selected = preference?.toLowerCase()
-  if (selected !== undefined && Object.hasOwn(dictionaries, selected)) return resolveDesktopLocale(selected)
+  if (selected !== undefined && Object.hasOwn(dictionaries, selected)) return resolveDesktopLocale(selected, productName)
   for (const language of languages) {
     const primary = language.toLowerCase().split('-')[0]
-    if (primary !== undefined && Object.hasOwn(dictionaries, primary)) return resolveDesktopLocale(primary)
+    if (primary !== undefined && Object.hasOwn(dictionaries, primary)) return resolveDesktopLocale(primary, productName)
   }
-  return resolveDesktopLocale('en')
+  return resolveDesktopLocale('en', productName)
 }
 
 /** Replace named placeholders in one locale-owned message. */

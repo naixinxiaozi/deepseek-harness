@@ -1,4 +1,5 @@
 import { readInstallerLocales, renderInstallerStrings } from './installer-locales.mjs'
+import { readDesktopDistributionBuild } from '../lib/types/desktop-distribution-build.js'
 import { officePackageDirectories } from '../../../scripts/libreoffice-packages.mjs'
 import { X509Certificate } from 'node:crypto'
 import { readFileSync } from 'node:fs'
@@ -51,6 +52,8 @@ export function createElectronBuilderConfig(
   preparedRuntime = undefined,
   preparedRuntimeVersion = undefined,
 ) {
+  const distributionBuild = readDesktopDistributionBuild(env)
+  const distribution = distributionBuild?.manifest
   const appId = resolveDesktopAppId(env)
   const targetPlatform = env.DSH_DESKTOP_TARGET_PLATFORM
   const resolvedPlatform = targetPlatform ?? hostPlatform
@@ -66,7 +69,9 @@ export function createElectronBuilderConfig(
   if (skipNotarization && (unsigned || resolvedPlatform !== 'darwin')) throw new Error('Skipping notarization requires a signed macOS build')
   const packagesMacOS = targetPlatform === 'darwin' || (targetPlatform === undefined && hostPlatform === 'darwin')
   const packagesWindows = resolvedPlatform === 'win32'
-  const policy = packagesMacOS && unsigned ? undefined : resolveDesktopPolicyEnvironment(env)
+  const policy = distribution?.update.mode === 'disabled' || (packagesMacOS && unsigned)
+    ? undefined
+    : resolveDesktopPolicyEnvironment(env)
   if (resolvedPlatform === 'win32') installWindowsDirectoryInstaller()
   const macOSSigning = packagesMacOS && !unsigned ? resolveMacOSSigningEnvironment(env) : undefined
   if (packagesMacOS && !unsigned && !skipNotarization) resolveMacOSNotarizationEnvironment(env)
@@ -99,28 +104,47 @@ export function createElectronBuilderConfig(
   if (windowsSigner !== undefined) {
     installWindowsNsisBootstrapSigner({ sign: windowsSigner })
   }
-  const update = unsigned ? undefined : resolveDesktopAutoUpdateConfig(env, resolvedPlatform, resolvedArch)
+  const update = unsigned || distribution?.update.mode === 'disabled'
+    ? undefined
+    : resolveDesktopAutoUpdateConfig(env, resolvedPlatform, resolvedArch)
   if (preparedRuntime !== undefined) buildPaths.dsh = preparedRuntime
   // electron-builder merges extraMetadata into the packaged manifest, so a build version here reaches
   // the artifact names, the update feed, and the installed app.getVersion() the updater compares against.
   const productVersion = JSON.parse(readFileSync(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8')).version
   const buildVersion = resolveDesktopBuildVersion(env, productVersion)
   const packaged = resolveDesktopBuildCommit(env)
+  const productName = distribution?.product.name ?? 'DeepSeek Harness'
+  const artifactProduct = productName.toLowerCase().replace(/[^a-z0-9]+/gu, '-').replace(/^-|-$/gu, '') || 'desktop'
+  const windowsIcon = distributionBuild?.assets.windowsIcon
+    ?? fileURLToPath(new URL('../resources/icon-windows.png', import.meta.url))
+  const macosIcon = distributionBuild?.assets.macosIcon
+    ?? fileURLToPath(new URL('../resources/icon-macos.png', import.meta.url))
+  const trayIcon = distributionBuild?.assets.trayIcon
+    ?? fileURLToPath(new URL('../resources/tray-windows.ico', import.meta.url))
+  const installerSidebar = distributionBuild?.assets.installerSidebar
+    ?? join(buildPaths.root, 'installer-ui', 'uninstaller-sidebar.bmp')
   return {
-    appId,
-    protocols: [{ name: 'DeepSeek Harness', schemes: ['dsh'] }],
+    appId: distribution?.product.appId ?? appId,
+    protocols: [{
+      name: distribution?.product.protocolName ?? 'DeepSeek Harness',
+      schemes: [distribution?.product.protocolScheme ?? 'dsh'],
+    }],
     extraMetadata: {
-      dshDesktopAppId: appId,
+      dshDesktopAppId: distribution?.product.appId ?? appId,
+      ...(distribution === undefined ? {} : {
+        dshDesktopDistribution: 'enterprise',
+        dshDesktopUpdatesEnabled: distribution.update.mode !== 'disabled',
+      }),
       dshDesktopUpdateChannel: update?.channel ?? 'nightly',
       ...(policy === undefined ? {} : { dshMandatoryUpdatePolicy: policy }),
       ...buildVersion === productVersion ? {} : { version: buildVersion },
       ...packaged === undefined ? {} : { dshBuildCommit: packaged.commit, dshBuildDirty: packaged.dirty },
     },
-    productName: 'DeepSeek Harness',
+    productName,
     // The default copyright uses author.name; this line names the product instead.
-    copyright: `Copyright © ${new Date().getFullYear()} \${productName}`,
+    copyright: distribution?.product.copyright ?? `Copyright © ${new Date().getFullYear()} \${productName}`,
     // Unsigned builds carry their own suffix so a shared file can never pass for a release artifact.
-    artifactName: `deepseek-harness-\${version}-\${os}-\${arch}${output.suffix}.\${ext}`,
+    artifactName: `${artifactProduct}-\${version}-\${os}-\${arch}${output.suffix}.\${ext}`,
     directories: { output: output.directory },
     asar: true,
     electronDist: buildPaths.electron,
@@ -132,7 +156,11 @@ export function createElectronBuilderConfig(
         '-OutputDirectory', join(buildPaths.root, 'installer-ui')], {
         env: scrubWindowsSigningEnvironment(env), windowsHide: true,
       })
-      await writeFile(join(buildPaths.root, 'installer-ui', 'strings.nsh'), renderInstallerStrings(readInstallerLocales()), 'utf8')
+      await writeFile(
+        join(buildPaths.root, 'installer-ui', 'strings.nsh'),
+        renderInstallerStrings(readInstallerLocales(), productName),
+        'utf8',
+      )
       if (windowsSigner !== undefined) {
         await windowsSigner({ path: join(buildPaths.root, 'installer-ui', 'window-frame.dll'), hash: 'sha256', isNest: false })
       }
@@ -159,17 +187,18 @@ export function createElectronBuilderConfig(
     asarUnpack: unpack,
     extraResources: [
       { from: buildPaths.runtime, to: 'runtime' },
-      { from: fileURLToPath(new URL('../resources/icon-windows.png', import.meta.url)), to: 'icon.png' },
+      { from: windowsIcon, to: 'icon.png' },
       // Windows tray bitmaps; macOS keeps the Dock and ships no menu bar icon.
-      ...(packagesWindows ? [{ from: fileURLToPath(new URL('../resources/tray-windows.ico', import.meta.url)), to: 'tray.ico' }] : []),
+      ...(packagesWindows ? [{ from: trayIcon, to: 'tray.ico' }] : []),
+      ...(distributionBuild === undefined ? [] : [{ from: distributionBuild.manifestPath, to: 'distribution.json' }]),
     ],
     mac: {
-      icon: fileURLToPath(new URL('../resources/icon-macos.png', import.meta.url)),
+      icon: macosIcon,
       category: 'public.app-category.developer-tools',
       // macOS matches the application locale against this bundle, not Electron Framework resources.
       extendInfo: {
         CFBundleLocalizations: ['en', 'zh_CN', 'ja', 'es', 'fr', 'de', 'ru', 'pt'],
-        NSMicrophoneUsageDescription: 'DeepSeek Harness uses your microphone to transcribe speech into message drafts.',
+        NSMicrophoneUsageDescription: `${productName} uses your microphone to transcribe speech into message drafts.`,
       },
       // Ad-hoc signing keeps the modified Electron executable runnable without a Developer ID.
       identity: unsigned ? '-' : macOSSigning?.signingIdentity,
@@ -245,7 +274,7 @@ export function createElectronBuilderConfig(
       )
     },
     win: {
-      icon: fileURLToPath(new URL('../resources/icon-windows.png', import.meta.url)),
+      icon: windowsIcon,
       forceCodeSigning: !unsigned,
       signtoolOptions: {
         sign: windowsSigner,
@@ -260,8 +289,8 @@ export function createElectronBuilderConfig(
     },
     nsis: {
       uninstallDisplayName: '${productName}',
-      installerSidebar: join(buildPaths.root, 'installer-ui', 'uninstaller-sidebar.bmp'),
-      uninstallerSidebar: join(buildPaths.root, 'installer-ui', 'uninstaller-sidebar.bmp'),
+      installerSidebar,
+      uninstallerSidebar: installerSidebar,
       include: fileURLToPath(new URL('./installer.nsh', import.meta.url)),
       oneClick: false,
       perMachine: false,
