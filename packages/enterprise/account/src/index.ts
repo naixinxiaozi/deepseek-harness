@@ -5,15 +5,17 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { platform, release } from 'node:os'
 import { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import type {} from '@deepseek-ai/dsh-agent'
 import { credentialRef, type CredentialRef } from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-credentials'
 import {
-  DeepSeekAccount,
-  installAccountTaskCancellation,
-  type AccountBonusBatch,
-  type AccountBonusOrderId,
   type AccountClientMetadata,
   type AccountDetails,
+  type AccountNotification,
+  type AccountNotificationBatch,
+  type AccountNotificationEvent,
+  type AccountNotificationId,
+  type AccountUpdate,
   type AccountUserId,
   type AccountView,
   type PlatformSession,
@@ -21,7 +23,9 @@ import {
   type SignInAttemptView,
 } from '@deepseek-ai/dsh-deepseek-account'
 import type {} from '@deepseek-ai/dsh-host-webserver'
+import { LlmError } from '@deepseek-ai/dsh-llm'
 import { brandString } from '@deepseek-ai/dsh-brand'
+import { TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import { EnterpriseAuthError, exchangeEnterpriseCredentials, revokeEnterpriseToken } from './protocol.ts'
 import { renderEnterpriseLoginPage } from './login-page.ts'
 
@@ -32,7 +36,7 @@ export type { EnterpriseAuthConfig } from './config.ts'
 /** Stable plugin name. */
 export const name = 'enterprise-account'
 /** Host services required by the provider. */
-export const inject = ['credentials', 'webServer'] as const
+export const inject = ['credentials', 'webServer']
 
 /** Credential reference consumed by the enterprise `llm-pi-ai` route. */
 export const ENTERPRISE_LLM_TOKEN: CredentialRef = credentialRef('ENTERPRISE_LLM_TOKEN')
@@ -136,90 +140,112 @@ function nonceMatches(expected: string, received: string): boolean {
 }
 
 /** Enterprise account service backed by one long-lived credential reference. */
-export class EnterpriseAccount extends DeepSeekAccount {
+export class EnterpriseAccount extends TypertRemoteService {
   static inject = inject
   static Config = Config
-  private readonly config: Config
-  private readonly usageUrl: string
-  private readonly topUpUrl: string
-  private readonly inferenceOrigin: string
-  private readonly listeners = new Set<() => void>()
-  private attempt: Attempt | undefined
-  private removing: Promise<AccountView> | undefined
-  private closed = false
+  private readonly enterpriseConfig: Config
+  private readonly enterpriseUsageUrl: string
+  private readonly enterpriseTopUpUrl: string
+  private readonly enterpriseInferenceOrigin: string
+  private readonly enterpriseListeners = new Set<(kind: AccountUpdate['type']) => void>()
+  private enterpriseAttempt: Attempt | undefined
+  private enterpriseRemoving: Promise<AccountView> | undefined
+  private enterpriseClosed = false
+  private readonly enterpriseLifetime = new AbortController()
 
   /**
    * @param ctx - Host with credentials and webServer services.
    * @param config - Product, enterprise endpoint, and timeout configuration.
    */
   constructor(ctx: Context, config: Config) {
-    super(ctx)
-    installAccountTaskCancellation(ctx)
-    this.config = Config(config)
-    this.usageUrl = browserDestination(this.config.usageUrl)
-    this.topUpUrl = browserDestination(this.config.topUpUrl)
-    const inference = new URL(this.config.inferenceOrigin)
+    super(ctx, 'deepseekAccount', { namespace: 'account' })
+    this.enterpriseConfig = Config(config)
+    this.enterpriseUsageUrl = browserDestination(this.enterpriseConfig.usageUrl)
+    this.enterpriseTopUpUrl = browserDestination(this.enterpriseConfig.topUpUrl)
+    const inference = new URL(this.enterpriseConfig.inferenceOrigin)
     if (!['http:', 'https:'].includes(inference.protocol) || inference.username || inference.password
       || inference.pathname !== '/' || inference.search || inference.hash) {
       throw new Error('enterprise account: inferenceOrigin must be an HTTP(S) origin without credentials, path, query or fragment')
     }
     if (inference.protocol === 'http:'
-      && !(this.config.allowLoopbackHttp && ['127.0.0.1', 'localhost', '[::1]'].includes(inference.hostname))) {
+      && !(this.enterpriseConfig.allowLoopbackHttp && ['127.0.0.1', 'localhost', '[::1]'].includes(inference.hostname))) {
       throw new Error('enterprise account: inferenceOrigin requires HTTPS')
     }
-    this.inferenceOrigin = inference.origin
+    this.enterpriseInferenceOrigin = inference.origin
     ctx.on('credentials/reference-updated', (ref) => {
-      if (ref === ENTERPRISE_LLM_TOKEN) this.changed()
+      if (ref === ENTERPRISE_LLM_TOKEN) this.notifyChanged('credentials-changed')
+    })
+    ctx.inject(['agents'], (scope) => {
+      scope.on('agent/error', ({ error }) => {
+        if (error instanceof LlmError && error.code === 'ACCOUNT_SIGN_IN_REQUIRED') {
+          scope.emit('deepseek-account/model-sign-in-required')
+        }
+      })
+      scope.on('deepseek-account/signed-out', () => {
+        for (const agent of scope.agents.list()) {
+          if (agent.status === 'running' && agent.session.requestContext()?.provider === 'deepseek-account') {
+            agent.cancel({ kind: 'hook', reason: 'deepseek-account/signed-out' }, { keepInbox: true })
+          }
+        }
+      })
     })
     ctx.effect(() => async () => {
-      this.closed = true
-      const attempt = this.attempt
+      this.enterpriseClosed = true
+      this.enterpriseLifetime.abort()
+      const attempt = this.enterpriseAttempt
       if (attempt !== undefined) {
         if (attempt.view.phase !== 'committing') attempt.controller.abort()
         void attempt.disposeRoute()
         await attempt.done
       }
-      await this.removing
-      this.changed()
+      await this.enterpriseRemoving
+      this.notifyChanged('snapshot')
     }, 'enterprise account lifetime')
   }
 
-  override async getState(): Promise<AccountView> {
+  async getState(): Promise<AccountView> {
     const info = await this.ctx.credentials.describe(ENTERPRISE_LLM_TOKEN)
     return {
       status: info.configured ? 'credential-stored' : 'signed-out',
-      attempt: this.attempt?.view ?? null,
-      links: { usageUrl: this.usageUrl, topUpUrl: this.topUpUrl },
+      attempt: this.enterpriseAttempt?.view ?? null,
+      links: { usageUrl: this.enterpriseUsageUrl, topUpUrl: this.enterpriseTopUpUrl },
     }
   }
 
-  override getProfile(_client: AccountClientMetadata): Promise<AccountDetails['profile'] | null> {
+  getProfile(_client: AccountClientMetadata): Promise<AccountDetails['profile'] | null> {
     return Promise.resolve(null)
   }
 
-  override getBalance(_client: AccountClientMetadata): Promise<AccountDetails['balance'] | null> {
+  getBalance(_client: AccountClientMetadata): Promise<AccountDetails['balance'] | null> {
     return Promise.resolve(null)
   }
 
-  override getUnnotifiedBonuses(_client: AccountClientMetadata): Promise<AccountBonusBatch | null> {
+  getNotifications(_client: AccountClientMetadata): Promise<AccountNotificationBatch | null> {
     return Promise.resolve(null)
   }
 
-  override ackBonusNotified(
-    _accountId: AccountUserId,
-    _orderId: AccountBonusOrderId,
+  getNotificationContent(
+    _id: AccountNotificationId,
+    _client: AccountClientMetadata,
+  ): Promise<AccountNotification | null> {
+    return Promise.resolve(null)
+  }
+
+  reportNotificationEvent(
+    _id: AccountNotificationId,
+    _event: AccountNotificationEvent,
     _client: AccountClientMetadata,
   ): Promise<boolean> {
     return Promise.resolve(false)
   }
 
-  override async startSignIn(
+  async startSignIn(
     client: AccountClientMetadata,
     callbackOrigin: string,
     _loginSource: 'web' | 'desktop',
   ): Promise<AccountView> {
-    if (this.closed) throw new EnterpriseAuthError('enterprise account is disposed', 'protocol')
-    const current = this.attempt
+    if (this.enterpriseClosed) throw new EnterpriseAuthError('enterprise account is disposed', 'protocol')
+    const current = this.enterpriseAttempt
     if (current !== undefined
       && !['succeeded', 'cancelled', 'expired', 'failed'].includes(current.view.phase)) {
       return this.getState()
@@ -238,7 +264,7 @@ export class EnterpriseAccount extends DeepSeekAccount {
         id,
         phase: 'waiting-browser',
         authorizeUrl: new URL(path, origin).href,
-        expiresAt: Date.now() + this.config.attemptTimeoutMs,
+        expiresAt: Date.now() + this.enterpriseConfig.attemptTimeoutMs,
       },
       done: Promise.resolve(),
       disposeRoute: () => Promise.resolve(),
@@ -256,17 +282,17 @@ export class EnterpriseAccount extends DeepSeekAccount {
       })
       return () => { dispose() }
     }, 'enterprise account login form')
-    this.attempt = attempt
-    this.changed()
+    this.enterpriseAttempt = attempt
+    this.notifyChanged('snapshot')
     return this.getState()
   }
 
-  override async cancelSignIn(id: SignInAttemptId): Promise<AccountView> {
-    const attempt = this.attempt
+  async cancelSignIn(id: SignInAttemptId): Promise<AccountView> {
+    const attempt = this.enterpriseAttempt
     if (attempt?.id === id) {
       if (attempt.view.phase !== 'committing') {
         attempt.controller.abort()
-        this.update(attempt, { phase: 'cancelled', authorizeUrl: undefined })
+        this.updateAttempt(attempt, { phase: 'cancelled', authorizeUrl: undefined })
         void attempt.disposeRoute()
       }
       await attempt.done
@@ -274,83 +300,131 @@ export class EnterpriseAccount extends DeepSeekAccount {
     return this.getState()
   }
 
-  override signOut(_client: AccountClientMetadata): Promise<AccountView> {
-    this.removing ??= (async () => {
+  signOut(_client: AccountClientMetadata): Promise<AccountView> {
+    this.enterpriseRemoving ??= (async () => {
       const current = await this.ctx.credentials.resolve(ENTERPRISE_LLM_TOKEN)
       await this.ctx.credentials.unset(ENTERPRISE_LLM_TOKEN)
-      if (this.attempt !== undefined) {
-        this.attempt.controller.abort()
-        void this.attempt.disposeRoute()
+      if (this.enterpriseAttempt !== undefined) {
+        this.enterpriseAttempt.controller.abort()
+        void this.enterpriseAttempt.disposeRoute()
       }
-      this.attempt = undefined
+      this.enterpriseAttempt = undefined
       this.ctx.emit('deepseek-account/signed-out')
-      this.changed()
+      this.notifyChanged('snapshot')
       if (current !== undefined) {
         void revokeEnterpriseToken(
-          this.config,
+          this.enterpriseConfig,
           current.value,
-          AbortSignal.timeout(this.config.requestTimeoutMs),
+          AbortSignal.timeout(this.enterpriseConfig.requestTimeoutMs),
         ).catch(() => undefined)
       }
       return this.getState()
-    })().finally(() => { this.removing = undefined })
-    return this.removing
+    })().finally(() => { this.enterpriseRemoving = undefined })
+    return this.enterpriseRemoving
   }
 
-  override async resolveToken(url: string): Promise<string | undefined> {
-    if (this.closed || new URL(url).origin !== this.inferenceOrigin) return undefined
+  async resolveToken(url: string): Promise<string | undefined> {
+    if (this.enterpriseClosed || new URL(url).origin !== this.enterpriseInferenceOrigin) return undefined
     return (await this.ctx.credentials.resolve(ENTERPRISE_LLM_TOKEN))?.value
   }
 
-  override async rejectToken(token: string): Promise<void> {
+  async rejectToken(token: string): Promise<void> {
     const current = await this.ctx.credentials.resolve(ENTERPRISE_LLM_TOKEN)
     if (current?.value !== token) return
     await this.ctx.credentials.unset(ENTERPRISE_LLM_TOKEN)
     this.ctx.emit('deepseek-account/session-expired')
     this.ctx.emit('deepseek-account/signed-out')
-    this.changed()
+    this.notifyChanged('snapshot')
   }
 
-  override getPlatformSession(): Promise<PlatformSession | null> {
+  getPlatformSession(): Promise<PlatformSession | null> {
     return Promise.resolve(null)
   }
 
-  override getDeviceIdentity(): Promise<{ deviceId?: string; userId?: AccountUserId; osVersion: string }> {
+  getDeviceIdentity(): Promise<{ deviceId?: string; userId?: AccountUserId; osVersion: string }> {
     return Promise.resolve({ osVersion: `${platform()} ${release()}` })
   }
 
-  override async* watch(signal: AbortSignal): AsyncIterable<AccountView> {
-    let dirty = true
+  async* watch(signal: AbortSignal, _includeIdentityChanges = false): AsyncIterable<AccountUpdate> {
+    let pending: AccountUpdate['type'] | undefined = 'snapshot'
     let wake: (() => void) | undefined
-    const changed = (): void => {
-      dirty = true
+    const changed = (kind: AccountUpdate['type']): void => {
+      if (kind === 'credentials-changed' || pending === undefined) pending = kind
       wake?.()
     }
-    this.listeners.add(changed)
-    signal.addEventListener('abort', changed, { once: true })
+    const abort = (): void => { wake?.() }
+    this.enterpriseListeners.add(changed)
+    signal.addEventListener('abort', abort, { once: true })
     try {
-      while (!this.closed && !signal.aborted) {
-        if (dirty) {
-          dirty = false
-          yield await this.getState()
+      while (!this.enterpriseClosed && !signal.aborted) {
+        if (pending !== undefined) {
+          const type = pending
+          pending = undefined
+          yield { type, state: await this.getState() }
           continue
         }
         await new Promise<void>((resolve) => { wake = resolve })
       }
     } finally {
-      this.listeners.delete(changed)
-      signal.removeEventListener('abort', changed)
+      this.enterpriseListeners.delete(changed)
+      signal.removeEventListener('abort', abort)
     }
   }
 
+  /**
+   * Inspect running work before sign-out.
+   * @returns whether a running task's latest request uses the account route.
+   */
+  hasRunningAccountTasks(): boolean {
+    return this.ctx.get('agents')?.list().some(agent =>
+      agent.status === 'running' && agent.session.requestContext()?.provider === 'deepseek-account') ?? false
+  }
+
+  /**
+   * Subscribe to live credential expiry without replay.
+   * @param signal - subscription lifetime; provider disposal also ends it.
+   * @returns expiry notifications emitted during the subscription.
+   */
+  async *watchExpiry(signal: AbortSignal): AsyncIterable<'session-expired'> {
+    const lifetime = AbortSignal.any([signal, this.enterpriseLifetime.signal])
+    let pending = 0
+    let wake: (() => void) | undefined
+    const stop = this.ctx.on('deepseek-account/session-expired', () => { pending++; wake?.() })
+    const abort = (): void => { wake?.() }
+    lifetime.addEventListener('abort', abort, { once: true })
+    try {
+      while (!lifetime.aborted) {
+        if (pending > 0) {
+          pending--
+          yield 'session-expired'
+          continue
+        }
+        await new Promise<void>((resolve) => { wake = resolve })
+      }
+    } finally {
+      stop()
+      lifetime.removeEventListener('abort', abort)
+    }
+  }
+
+  /**
+   * Stream account state without the Host-only identity subscription option.
+   * @param signal - subscription lifetime.
+   * @returns initial state, login progress, and credential-change updates.
+   */
+  watchState(signal: AbortSignal): AsyncIterable<AccountUpdate> {
+    return this.watch(signal)
+  }
+
   private async handleLogin(attempt: Attempt, request: IncomingMessage, response: ServerResponse): Promise<void> {
-    if (attempt !== this.attempt || attempt.view.phase !== 'waiting-browser' || Date.now() >= (attempt.view.expiresAt ?? 0)) {
+    if (attempt !== this.enterpriseAttempt || attempt.view.phase !== 'waiting-browser'
+      || Date.now() >= (attempt.view.expiresAt ?? 0)) {
       response.writeHead(410, { 'cache-control': 'no-store' }).end()
       return
     }
     if (request.method === 'GET') {
       const page = renderEnterpriseLoginPage({
-        productName: this.config.productName,
+        productName: this.enterpriseConfig.productName,
         nonce: attempt.nonce,
         locale: attempt.locale,
       })
@@ -382,17 +456,17 @@ export class EnterpriseAccount extends DeepSeekAccount {
         this.failPage(attempt, response, 'invalid-credentials', 400)
         return
       }
-      this.update(attempt, { phase: 'exchanging' })
+      this.updateAttempt(attempt, { phase: 'exchanging' })
       const token = await exchangeEnterpriseCredentials(
-        this.config,
+        this.enterpriseConfig,
         username,
         password,
         attempt.controller.signal,
       )
       attempt.controller.signal.throwIfAborted()
-      this.update(attempt, { phase: 'committing' })
+      this.updateAttempt(attempt, { phase: 'committing' })
       await this.ctx.credentials.set(ENTERPRISE_LLM_TOKEN, token)
-      this.update(attempt, { phase: 'succeeded' })
+      this.updateAttempt(attempt, { phase: 'succeeded' })
       void attempt.disposeRoute()
       response.writeHead(200, {
         'content-type': 'text/html; charset=utf-8',
@@ -417,12 +491,12 @@ export class EnterpriseAccount extends DeepSeekAccount {
     status: number,
   ): void {
     const page = renderEnterpriseLoginPage({
-      productName: this.config.productName,
+      productName: this.enterpriseConfig.productName,
       nonce: attempt.nonce,
       locale: attempt.locale,
       error,
     })
-    this.update(attempt, {
+    this.updateAttempt(attempt, {
       phase: error === 'expired' ? 'expired' : 'failed',
       authorizeUrl: undefined,
       errorCode: error === 'invalid-credentials' ? 'protocol' : error,
@@ -431,7 +505,7 @@ export class EnterpriseAccount extends DeepSeekAccount {
     if (!response.headersSent) response.writeHead(status, responseHeaders(page.headers)).end(page.html)
   }
 
-  private update(
+  private updateAttempt(
     attempt: Attempt,
     view: Omit<Partial<SignInAttemptView>, 'authorizeUrl'> & { authorizeUrl?: string | undefined },
   ): void {
@@ -442,11 +516,11 @@ export class EnterpriseAccount extends DeepSeekAccount {
       ...next,
       ...(authorizeUrl === undefined ? {} : { authorizeUrl }),
     }
-    this.changed()
+    this.notifyChanged('snapshot')
   }
 
-  private changed(): void {
-    for (const listener of this.listeners) listener()
+  private notifyChanged(kind: AccountUpdate['type']): void {
+    for (const listener of this.enterpriseListeners) listener(kind)
   }
 }
 
