@@ -1,0 +1,34 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/enterprise/distribution/README.md
+/:
+  en: ff6023ce3d51dbdc
+  zh: fe53a4e69c5e1dd1
+/dsh-enterprise-dsh-enterprise-distribution:
+  en: cb64d6e148beb890
+  zh: 9c94bfbb7ff52585
+/dsh-enterprise-dsh-enterprise-distribution/summary:
+  en: 532877924b94dfff
+  zh: e466e538b155673a
+/dsh-enterprise-dsh-enterprise-distribution/table-of-contents:
+  en: 80b31a934611cb4a
+  zh: 05f3f7f9cb2fd881
+/dsh-enterprise-dsh-enterprise-distribution/use-this-package:
+  en: de8b8797eefa8014
+  zh: af4a72c829468e6e
+/dsh-enterprise-dsh-enterprise-distribution/understand-the-implementation:
+  en: 19093c80a2a40512
+  zh: d8bafa66329c6778
+/dsh-enterprise-dsh-enterprise-distribution/understand-the-implementation/source-map:
+  en: 75debedbbed35ec1
+  zh: 1c7863ff926f3f1d
+/dsh-enterprise-dsh-enterprise-distribution/further-exploration:
+  en: b80fe185c10a9ab8
+  zh: ce42864b9d15e555
+/dsh-enterprise-dsh-enterprise-distribution/known-limitations-and-deferred-work:
+  en: 9bc2c22667281eee
+  zh: 99da1ccd76fd6476
+/dsh-enterprise-dsh-enterprise-distribution/known-limitations-and-deferred-work/dev-note:
+  en: e67f633dc6fe7773
+  zh: 3bb0c20c93f16f98

@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "product": {
+    "name": "Northstar Harness",
+    "executableName": "Northstar Harness",
+    "companyName": "Northstar",
+    "copyright": "Copyright Northstar",
+    "appId": "com.northstar.harness",
+    "protocolName": "Northstar Harness",
+    "protocolScheme": "northstar-harness",
+    "dataDirectory": "NorthstarHarness"
+  },
+  "auth": {
+    "loginUrl": "https://services.northstar.example/auth/login",
+    "logoutUrl": "https://services.northstar.example/auth/logout",
+    "usageUrl": "https://services.northstar.example/usage",
+    "topUpUrl": "https://services.northstar.example/top-up",
+    "inferenceOrigin": "https://services.northstar.example",
+    "usernameField": "username",
+    "passwordField": "password",
+    "tokenField": "access_token",
+    "allowLoopbackHttp": false,
+    "requestTimeoutMs": 30000,
+    "attemptTimeoutMs": 600000
+  },
+  "model": {
+    "provider": "enterprise",
+    "displayName": "Northstar Gateway",
+    "baseUrl": "https://services.northstar.example/v1",
+    "api": "openai-completions",
+    "defaultModel": "northstar-chat",
+    "models": [
+      {
+        "id": "northstar-chat",
+        "name": "Northstar Chat",
+        "contextWindow": 131072,
+        "maxTokens": 32768,
+        "input": ["text", "image"]
+      }
+    ]
+  },
+  "branding": {
+    "windowsIcon": "assets/icon-windows.png",
+    "macosIcon": "assets/icon-macos.png",
+    "trayIcon": "assets/tray.ico",
+    "welcomeMark": "assets/welcome-brand.svg",
+    "installerSidebar": "assets/installer-sidebar.bmp"
+  },
+  "update": {
+    "mode": "disabled"
+  },
+  "bundles": [
+    "@deepseek-ai/dsh-base",
+    "@deepseek-ai/dsh-web-app",
+    "@dsh-enterprise/dsh-enterprise"
+  ]
+}

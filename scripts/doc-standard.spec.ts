@@ -110,6 +110,7 @@ const PACKAGE_LIBRARIES: Readonly<Record<string, string>> = {
   'packages/util/timeout': 'Zero-dependency timeout utility.',
   'packages/util/values': 'Stateless lossless-JSON and immutable-value helpers.',
   'packages/util/workspace-path': 'Zero-dependency Workspace path formatter.',
+  'packages/enterprise/distribution': 'Enterprise distribution manifest validation library.',
 }
 
 function readFrontmatter(file: string): Record<string, unknown> {

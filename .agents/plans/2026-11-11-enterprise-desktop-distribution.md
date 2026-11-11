@@ -45,14 +45,17 @@
 - Modify: `packages/README.md`
 - Modify: `packages/README.zh.md`
 - Modify: `packages/README.i18n.yaml`
+- Modify: `tsconfig.base.json`
 - Modify: `tsconfig.host.json`
 - Modify: `tsconfig.client.json`
+- Modify: `scripts/doc-standard.spec.ts`
+- Modify: `scripts/verify-package-readme-model-experience.ts`
 
 **Interfaces:**
 - Consumes: the confirmed requirements in the design document.
 - Produces: `EnterpriseDistribution`, `EnterpriseModel`, `parseEnterpriseDistribution(value: unknown): EnterpriseDistribution`, and `ENTERPRISE_DISTRIBUTION_SCHEMA_VERSION = 1`.
 
-- [ ] **Step 1: Write the failing manifest test**
+- [x] **Step 1: Write the failing manifest test**
 
 ```ts
 import { readFileSync } from 'node:fs'
@@ -89,13 +92,13 @@ describe('enterprise distribution', () => {
 })
 ```
 
-- [ ] **Step 2: Run the test to verify it fails**
+- [x] **Step 2: Run the test to verify it fails**
 
 Run: `pnpm exec vitest run packages/enterprise/distribution/tests/distribution.spec.ts`
 
 Expected: FAIL because `packages/enterprise/distribution/src/index.ts` does not exist.
 
-- [ ] **Step 3: Add the concrete manifest types**
+- [x] **Step 3: Add the concrete manifest types**
 
 ```ts
 export const ENTERPRISE_DISTRIBUTION_SCHEMA_VERSION = 1 as const
@@ -155,7 +158,7 @@ export interface EnterpriseDistribution {
 }
 ```
 
-- [ ] **Step 4: Implement strict parsing**
+- [x] **Step 4: Implement strict parsing**
 
 Create `src/index.ts` with a Zod schema that validates all fields above. It must require a reverse-domain `product.appId`, a lowercase protocol scheme matching `/^[a-z][a-z0-9+.-]*$/`, two HTTPS account links, an HTTPS login URL unless `allowLoopbackHttp` is true and the host is loopback, a non-empty unique model list, and a `defaultModel` present in that list.
 
@@ -250,7 +253,7 @@ export function parseEnterpriseDistribution(value: unknown): EnterpriseDistribut
 }
 ```
 
-- [ ] **Step 5: Add the fixture and package metadata**
+- [x] **Step 5: Add the fixture and package metadata**
 
 Create `tests/fixtures/distribution.json` with the fixed Northstar values and relative asset paths under `tests/fixtures/assets/`. Add the package manifest with `private: true`, version `0.2.2-rc.1`, dependencies on `zod`, and `files` containing `lib/index.js` and declarations. Add TypeScript references to both aggregations.
 
@@ -262,15 +265,15 @@ pnpm run verify-translation-pairing --write packages/enterprise/README.md
 pnpm run verify-translation-pairing --write packages/enterprise/distribution/README.md
 ```
 
-- [ ] **Step 6: Run the focused test**
+- [x] **Step 6: Run the focused test**
 
 Run: `pnpm exec vitest run packages/enterprise/distribution/tests/distribution.spec.ts`
 
 Expected: PASS with 6 tests.
 
-- [ ] **Step 7: Run package and type checks**
+- [x] **Step 7: Run package and type checks**
 
-Run: `pnpm --filter @dsh-enterprise/dsh-enterprise-distribution build`
+Run: `pnpm exec tsc -b packages/enterprise/distribution`
 
 Expected: exit 0.
 
@@ -282,7 +285,7 @@ Run: `pnpm run build:check`
 
 Expected: exit 0.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add packages/enterprise packages/README.md tsconfig.host.json tsconfig.client.json

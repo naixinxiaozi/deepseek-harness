@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-The harness is assembled from npm packages under `packages/`, grouped by capability family: sessions and the agent loop, model-facing tools, shell and filesystem execution, web access, subagents, and the rest. Use this page as the top-level map: find the owning group, then open its README for the package list. Every package is scoped `@deepseek-ai/dsh-*` and lives in exactly one group; each group README is the authoritative package map for its family.
+The harness is assembled from npm packages under `packages/`, grouped by capability. Use this page as the top-level map: find the owning group, then open its README for the package list. Official packages use `@deepseek-ai/dsh-*`; the private enterprise group uses its own scope. Every package lives in exactly one group, and each group README is the authoritative package map.
 
 ## Table of Contents
 
@@ -65,6 +65,7 @@ Every package lives in exactly one group; new packages join existing groups, and
 | [`preset/`](preset/README.md) | Per-session agent composition from preset `cordis.yml` files |
 | [`guard/`](guard/README.md) | Loop-hygiene guards: advisory repeat-call reminders + the `tools/execute` deadline enforcer |
 | [`bundle/`](bundle/README.md) | Installable `dsh --profile` patch layers |
+| [`enterprise/`](enterprise/README.md) | Private branded Desktop distribution, enterprise authentication, and profile composition |
 | [`extensions/`](extensions/README.md) | Agent runtime self-modification: live plugin/service inspection and model-written mount/unmount |
 | [`mcp/`](mcp/README.md) | External Model Context Protocol servers exposed as native tools |
 | [`session/`](session/README.md) | Durable session data plane: persistence seam + backends, projection seam, log-backed titles, session reporting |

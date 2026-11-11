@@ -8363,6 +8363,12 @@ importers:
         specifier: workspace:*
         version: link:../../core/session
 
+  packages/enterprise/distribution:
+    dependencies:
+      zod:
+        specifier: 4.4.3
+        version: 4.4.3
+
   packages/experimental/action-cards:
     dependencies:
       zod:
