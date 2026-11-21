@@ -15,6 +15,7 @@ import {
   type AccountNotificationBatch,
   type AccountNotificationEvent,
   type AccountNotificationId,
+  type AccountRequestCredential,
   type AccountUpdate,
   type AccountUserId,
   type AccountView,
@@ -42,6 +43,8 @@ export const inject = ['credentials', 'webServer']
 export const ENTERPRISE_LLM_TOKEN: CredentialRef = credentialRef('ENTERPRISE_LLM_TOKEN')
 
 const MAX_FORM_BYTES = 16 * 1024
+/** Account token request header shared with the DeepSeek account transport. */
+const ACCOUNT_TOKEN_HEADER = 'x-dsh-auth-token'
 
 /** Private profile configuration for the enterprise account provider. */
 export interface Config {
@@ -152,6 +155,7 @@ export class EnterpriseAccount extends TypertRemoteService {
   private enterpriseRemoving: Promise<AccountView> | undefined
   private enterpriseClosed = false
   private readonly enterpriseLifetime = new AbortController()
+  private enterpriseSignedOut = new AbortController()
 
   /**
    * @param ctx - Host with credentials and webServer services.
@@ -273,6 +277,7 @@ export class EnterpriseAccount extends TypertRemoteService {
       const dispose = this.ctx.webServer.register({
         kind: 'exact',
         path,
+        auth: 'anonymous',
         handler: (request, response) => {
           void this.handleLogin(attempt, request, response).catch((error: unknown) => {
             console.error('[enterprise-account] login route failed', error instanceof Error ? error.name : 'unknown')
@@ -309,7 +314,7 @@ export class EnterpriseAccount extends TypertRemoteService {
         void this.enterpriseAttempt.disposeRoute()
       }
       this.enterpriseAttempt = undefined
-      this.ctx.emit('deepseek-account/signed-out')
+      this.publishSignedOut()
       this.notifyChanged('snapshot')
       if (current !== undefined) {
         void revokeEnterpriseToken(
@@ -323,9 +328,28 @@ export class EnterpriseAccount extends TypertRemoteService {
     return this.enterpriseRemoving
   }
 
-  async resolveToken(url: string): Promise<string | undefined> {
+  private async resolveToken(url: string): Promise<string | undefined> {
     if (this.enterpriseClosed || new URL(url).origin !== this.enterpriseInferenceOrigin) return undefined
     return (await this.ctx.credentials.resolve(ENTERPRISE_LLM_TOKEN))?.value
+  }
+
+  /**
+   * Release the enterprise token for one allowed request destination.
+   * @param url - actual request destination or API base URL.
+   * @returns the request credential, headers, and invalidation handle, or undefined for another origin or signed-out account.
+   */
+  async resolveRequestCredential(url: string): Promise<AccountRequestCredential | undefined> {
+    const revoked = this.enterpriseSignedOut.signal
+    const token = await this.resolveToken(url)
+    if (token === undefined) return undefined
+    return {
+      headers: { [ACCOUNT_TOKEN_HEADER]: token },
+      revoked,
+      reject: async () => {
+        try { await this.rejectToken(token) }
+        catch (_credentialRemovalFailed) { /* The destination's rejection is the failure to report; the next rejection retries. */ }
+      },
+    }
   }
 
   async rejectToken(token: string): Promise<void> {
@@ -333,7 +357,7 @@ export class EnterpriseAccount extends TypertRemoteService {
     if (current?.value !== token) return
     await this.ctx.credentials.unset(ENTERPRISE_LLM_TOKEN)
     this.ctx.emit('deepseek-account/session-expired')
-    this.ctx.emit('deepseek-account/signed-out')
+    this.publishSignedOut()
     this.notifyChanged('snapshot')
   }
 
@@ -521,6 +545,14 @@ export class EnterpriseAccount extends TypertRemoteService {
 
   private notifyChanged(kind: AccountUpdate['type']): void {
     for (const listener of this.enterpriseListeners) listener(kind)
+  }
+
+  /** Announce sign-out before aborting in-flight request credentials. */
+  private publishSignedOut(): void {
+    const signedOut = this.enterpriseSignedOut
+    this.enterpriseSignedOut = new AbortController()
+    try { this.ctx.emit('deepseek-account/signed-out') }
+    finally { signedOut.abort() }
   }
 }
 

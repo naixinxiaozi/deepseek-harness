@@ -12,7 +12,10 @@
       "path": "../../../vendor/cordis"
     },
     {
-      "path": "../../credentials/deepseek-account"
+      "path": "../../account/deepseek-account"
+    },
+    {
+      "path": "../../core/agent"
     },
     {
       "path": "../../credentials/credentials"
@@ -25,6 +28,9 @@
     },
     {
       "path": "../../llm/llm"
+    },
+    {
+      "path": "../../typert/protocol"
     },
     {
       "path": "../../../vendor/schemastery"

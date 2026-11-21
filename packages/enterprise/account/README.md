@@ -85,7 +85,7 @@ Mount this service in place of `dsh-deepseek-account-platform` and configure the
 ## Further Exploration
 
 - [Enterprise distribution manifest](../distribution/README.md) — validates the same endpoints before startup.
-- [DeepSeek account service](../../credentials/deepseek-account/README.md) — shared account service contract.
+- [DeepSeek account service](../../account/deepseek-account/README.md) — shared account service contract.
 - [Credentials](../../credentials/credentials-local/README.md) — local token storage and reference precedence.
 
 -----

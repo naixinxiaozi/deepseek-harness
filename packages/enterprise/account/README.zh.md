@@ -85,7 +85,7 @@ kind: "package-reference"
 ## 进一步探索
 
 - [企业发行清单](../distribution/README.zh.md)——在启动前校验同一组端点。
-- [DeepSeek 账号服务](../../credentials/deepseek-account/README.zh.md)——共享账号服务契约。
+- [DeepSeek 账号服务](../../account/deepseek-account/README.zh.md)——共享账号服务契约。
 - [凭据](../../credentials/credentials-local/README.zh.md)——本地 Token 存储与引用优先级。
 
 -----

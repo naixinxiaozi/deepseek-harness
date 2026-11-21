@@ -85,9 +85,10 @@ async function fixture(options: { holdLogin?: boolean } = {}) {
 }
 
 async function submit(formUrl: string, password = 'correct horse'): Promise<Response> {
-  const page = await (await fetch(formUrl)).text()
+  const response = await fetch(formUrl)
+  const page = await response.text()
   const nonce = /name="nonce" value="([^"]+)"/u.exec(page)?.[1]
-  if (nonce === undefined) throw new Error('missing nonce')
+  if (nonce === undefined) throw new Error(`missing nonce (${String(response.status)}): ${page.slice(0, 200)}`)
   return fetch(formUrl, {
     method: 'POST',
     headers: { 'content-type': 'application/x-www-form-urlencoded' },
@@ -111,9 +112,13 @@ describe('EnterpriseAccount', () => {
       attempt: { phase: 'succeeded' },
     })
     await expect(f.credentials.resolve(ENTERPRISE_LLM_TOKEN)).resolves.toMatchObject({ value: 'token-1' })
-    await expect(f.account.resolveToken('https://services.northstar.example/v1/messages'))
-      .resolves.toBe('token-1')
-    await expect(f.account.resolveToken('https://other.example/v1/messages')).resolves.toBeUndefined()
+    const credential = await f.account.resolveRequestCredential('https://services.northstar.example/v1/messages')
+    expect(credential?.headers).toEqual({ 'x-dsh-auth-token': 'token-1' })
+    expect(credential?.revoked.aborted).toBe(false)
+    await expect(f.account.resolveRequestCredential('https://other.example/v1/messages')).resolves.toBeUndefined()
+    await credential?.reject()
+    await expect(f.credentials.resolve(ENTERPRISE_LLM_TOKEN)).resolves.toBeUndefined()
+    expect(credential?.revoked.aborted).toBe(true)
   })
 
   it('does not commit a token after cancellation', async () => {
@@ -121,9 +126,10 @@ describe('EnterpriseAccount', () => {
     const started = await f.account.startSignIn(client, f.callbackOrigin, 'desktop')
     const formUrl = started.attempt?.authorizeUrl
     if (formUrl === undefined) throw new Error('missing login URL')
-    const page = await (await fetch(formUrl)).text()
+    const response = await fetch(formUrl)
+    const page = await response.text()
     const nonce = /name="nonce" value="([^"]+)"/u.exec(page)?.[1]
-    if (nonce === undefined) throw new Error('missing nonce')
+    if (nonce === undefined) throw new Error(`missing nonce (${String(response.status)}): ${page.slice(0, 200)}`)
     const posting = fetch(formUrl, {
       method: 'POST',
       headers: { 'content-type': 'application/x-www-form-urlencoded' },
